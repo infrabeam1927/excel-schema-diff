@@ -250,6 +250,17 @@ def reconcile(internal_by_key, external_by_key, comparable_fields, external_head
 # Output workbook
 # ---------------------------------------------------------------------------
 
+FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@")
+
+
+def sanitize_cell(value):
+    # Untrusted source data (e.g. the external consultant feed) could otherwise
+    # land as a live formula when the report is opened -- CSV/Excel formula injection.
+    if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARS):
+        return "'" + value
+    return value
+
+
 def style_header_row(ws, ncols, fill_color="4472C4"):
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
@@ -272,7 +283,7 @@ def write_sheet(wb, title, columns, rows, fill_color="4472C4"):
     ws.append(columns)
     all_rows = [columns]
     for row in rows:
-        values = [row.get(c, "") for c in columns]
+        values = [sanitize_cell(row.get(c, "")) for c in columns]
         ws.append(values)
         all_rows.append(values)
     style_header_row(ws, len(columns), fill_color)
