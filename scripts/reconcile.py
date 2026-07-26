@@ -82,10 +82,17 @@ def load_mapping(mapping_path):
 # Data loading
 # ---------------------------------------------------------------------------
 
+def normalize_join_key(value):
+    # Unlike every other field, the join key was compared raw; stray whitespace
+    # or casing differences between the two feeds would silently produce
+    # phantom "missing"/"new member" rows instead of a match.
+    return str(value or "").strip().upper()
+
+
 def load_internal(internal_path):
     with open(internal_path, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-    return {row[JOIN_FIELD]: row for row in rows}, rows[0].keys() if rows else []
+    return {normalize_join_key(row[JOIN_FIELD]): row for row in rows}, rows[0].keys() if rows else []
 
 
 def load_external(external_path, join_external_header):
@@ -101,7 +108,11 @@ def load_external(external_path, join_external_header):
         record = {header[i]: ("" if row[i] is None else str(row[i])) for i in range(len(header))}
         records.append(record)
 
-    return {row[join_external_header]: row for row in records if row.get(join_external_header)}
+    return {
+        normalize_join_key(row[join_external_header]): row
+        for row in records
+        if normalize_join_key(row.get(join_external_header))
+    }
 
 
 # ---------------------------------------------------------------------------
