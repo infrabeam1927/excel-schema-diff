@@ -47,7 +47,7 @@ python3 reconcile.py \
 All arguments default to the paths above, so `python3 reconcile.py` with no
 flags works out of the box.
 
-Requires `openpyxl` (`pip install openpyxl`).
+Requires `openpyxl` (`pip install -r requirements.txt`).
 
 ### Output
 
