@@ -17,7 +17,7 @@ Usage:
 import argparse
 import csv
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
@@ -105,7 +105,10 @@ def load_external(external_path, join_external_header):
     for row in rows[1:]:
         if row is None or all(v is None for v in row):
             continue
-        record = {header[i]: ("" if row[i] is None else str(row[i])) for i in range(len(header))}
+        # Keep native cell types (e.g. datetime) rather than stringifying here,
+        # so a date-formatted xlsx cell isn't turned into an unparseable
+        # "1979-09-04 00:00:00" string before normalize_date ever sees it.
+        record = {header[i]: ("" if row[i] is None else row[i]) for i in range(len(header))}
         records.append(record)
 
     return {
@@ -120,6 +123,10 @@ def load_external(external_path, join_external_header):
 # ---------------------------------------------------------------------------
 
 def normalize_date(value):
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
     value = str(value or "").strip()
     if not value:
         return ""
